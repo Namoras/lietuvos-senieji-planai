@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="lt"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Vilniaus senieji planai ir archeologiniai radiniai</title>
+<title>Lietuvos senieji planai ir archeologiniai radiniai</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="config.js"></script>
@@ -20,7 +20,10 @@ const D={"m": [{"y": 1581, "n": "Braun ir Hogenberg (patikimi gabalai)", "u": "b
 const map=L.map('map').fitBounds(D.m[0].b);
 const esri=L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{maxZoom:20,maxNativeZoom:19,attribution:'Palydovas &copy; Esri, Maxar'});
 const osm=L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:20,maxNativeZoom:19,attribution:'&copy; OpenStreetMap'});
-esri.addTo(map);
+const gsat=L.tileLayer('https://mt{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}',{subdomains:'0123',maxZoom:21,attribution:'&copy; Google'});
+const gmap=L.tileLayer('https://mt{s}.google.com/vt/lyrs=m&hl=lt&x={x}&y={y}&z={z}',{subdomains:'0123',maxZoom:21,attribution:'&copy; Google'});
+const ghyb=L.tileLayer('https://mt{s}.google.com/vt/lyrs=y&hl=lt&x={x}&y={y}&z={z}',{subdomains:'0123',maxZoom:21,attribution:'&copy; Google'});
+gmap.addTo(map);
 const ML=D.m.map(m=>L.imageOverlay(m.u,m.b,{opacity:.9,attribution:m.n}));
 const ms=document.getElementById('ms');
 let cur=null;
@@ -37,6 +40,6 @@ const finds=L.layerGroup().addTo(map);
 function setFinds(){const y=+ms.value;finds.clearLayers();fm.forEach(o=>{if(o.f.pf<=y&&y<=o.f.pt)finds.addLayer(o.mk)})}
 setFinds();
 const gcp=L.layerGroup(D.g.map((g,i)=>L.circleMarker([g.lat,g.lon],{radius:g.k==='gatvės linija'?4:6,color:g.k==='gatvės linija'?'#d63ccf':'#f2c200',weight:2,fillOpacity:.3}).bindPopup(`<b>${i+1}. ${esc(g.n)}</b><br>${esc(g.k)}<br>${g.lat}, ${g.lon}<br>Patikra be taško: ${g.l} m`)));
-const ctl=L.control.layers({'Palydovas (Esri)':esri,'Žemėlapis (OpenStreetMap)':osm},{'Archeologiniai radiniai':finds,'Kontroliniai taškai':gcp},{collapsed:true}).addTo(map);
-if(window.GOOGLE_MAPS_KEY){const s=document.createElement('script');s.src='https://maps.googleapis.com/maps/api/js?key='+GOOGLE_MAPS_KEY;s.onload=()=>{const m=document.createElement('script');m.src='https://unpkg.com/leaflet.gridlayer.googlemutant@0.14.1/dist/Leaflet.GoogleMutant.js';m.onload=()=>{const gs=L.gridLayer.googleMutant({type:'satellite',maxZoom:21}),gr=L.gridLayer.googleMutant({type:'roadmap',maxZoom:21});ctl.addBaseLayer(gs,'Google palydovas');ctl.addBaseLayer(gr,'Google Maps');map.removeLayer(esri);gs.addTo(map)};document.head.appendChild(m)};document.head.appendChild(s)}
+const ctl=L.control.layers({'Google Maps':gmap,'Google palydovas':gsat,'Google hibridinis':ghyb,'Palydovas (Esri)':esri,'OpenStreetMap':osm},{'Archeologiniai radiniai':finds,'Kontroliniai taškai':gcp},{collapsed:true}).addTo(map);
+if(window.GOOGLE_MAPS_KEY){const s=document.createElement('script');s.src='https://maps.googleapis.com/maps/api/js?key='+GOOGLE_MAPS_KEY;s.onload=()=>{const m=document.createElement('script');m.src='https://unpkg.com/leaflet.gridlayer.googlemutant@0.14.1/dist/Leaflet.GoogleMutant.js';m.onload=()=>{const gs=L.gridLayer.googleMutant({type:'satellite',maxZoom:21}),gr=L.gridLayer.googleMutant({type:'roadmap',maxZoom:21});ctl.addBaseLayer(gs,'Google palydovas');ctl.addBaseLayer(gr,'Google Maps');};document.head.appendChild(m)};document.head.appendChild(s)}
 </script></body></html>

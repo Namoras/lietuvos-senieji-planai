@@ -52,6 +52,8 @@ const TK=[[-10000,0],[-8000,1],[-6000,1],[-4000,0],[-2000,0],[0,0],[500,1],[1000
 document.getElementById('tk').innerHTML=TK.map(t=>`<span class="${t[1]?'m':''}" style="left:${pos(t[0])*100}%">${t[0]<0?(-t[0])+' pr. Kr.':t[0]}</span>`).join('');
 ms.value=YS.indexOf(1581);
 const yv=()=>YS[+ms.value];
+// rodoma, jei radinio laikotarpis persidengia su pasirinktu intervalu; nedatuoti – tik paskutiniame (2026) taške
+const inR=(a,b)=>{const i=+ms.value,lo=YS[i],hi=i<YS.length-1?YS[i+1]-1:9999;if(a==null)return i===YS.length-1;return a<=hi&&(b==null?9999:b)>=lo};
 let cur=null;
 function setMap(){const y=yv();const a=AG.find(a=>y>=a[0]&&y<a[1])||AG[AG.length-1];document.getElementById('my').textContent=fy(y)+' · '+a[2];let k=-1;D.m.forEach((m,i)=>{if(m.y<=y)k=i});
  if(cur){map.removeLayer(cur);cur=null}
@@ -63,10 +65,10 @@ const fm=D.f.map(f=>{const img=f.img?`img/${f.img}`:f.web_img;
  const mk=L.marker(f.ll,{title:f.t}).bindPopup(`<div class=pp><h3>${esc(f.t)}</h3><div class=d>Laikotarpis: ${esc(f.per)} · Tyrimai: ${esc(f.d)}</div>`+(img?`<img src="${img}" alt=""><div class=c><a href="${f.capu}" target=_blank>${esc(f.cap)}</a></div>`:'')+`<div>${esc(f.txt)}</div><div class=c>Vieta apytikslė (pagal adresą)</div><b>Šaltiniai</b><ul>${f.src.map(s=>`<li><a href="${s[1]}" target=_blank>${esc(s[0])}</a></li>`).join('')}</ul></div>`,{maxWidth:320});
  return {f,mk}});
 const finds=L.layerGroup().addTo(map);
-function setFinds(){const y=yv();finds.clearLayers();fm.forEach(o=>{if(o.f.pf<=y&&y<=o.f.pt)finds.addLayer(o.mk)})}
+function setFinds(){const y=yv();finds.clearLayers();fm.forEach(o=>{if(inR(o.f.pf,o.f.pt))finds.addLayer(o.mk)})}
 setFinds();
 const tyr=L.layerGroup().addTo(map);let TY=[];
-function setTyr(){const y=yv();tyr.clearLayers();TY.forEach(o=>{const p=o.d.pf;if(p==null||(p[0]<=y&&y<=p[1]))tyr.addLayer(o.mk)})}
+function setTyr(){const y=yv();tyr.clearLayers();TY.forEach(o=>{const p=o.d.pf;if(p?inR(p[0],p[1]):inR(null))tyr.addLayer(o.mk)})}
 fetch('tyrimai.json?v='+Math.floor(Date.now()/3e5)).then(r=>r.ok?r.json():[]).then(arr=>{TY=arr.filter(d=>d.lat).map(d=>({d,mk:L.circleMarker([d.lat,d.lon],{radius:5,color:'#0b6e4f',weight:2,fillColor:'#2ec27e',fillOpacity:.7}).bindPopup(()=>`<div class=pp><h3>${esc(d.t)}</h3><div class=d>Tyrimai: ${esc(d.y)} m. · Laikotarpis: ${d.pf?d.pf[0]+'–'+d.pf[1]:'nenustatytas'}</div><div style="font-size:12px">${esc(d.au||'')}</div><div style="margin:6px 0">${esc((d.lt||'').slice(0,700))}${(d.lt||'').length>700?'…':''}</div><div class=c>Vieta: ${esc(d.a)} (${d.p==='building'?'pagal pastato adresą':'apytiksliai, pagal gatvę'})</div><b>Šaltinis</b><ul><li><a href="https://www.lituanistika.lt/content/${d.id}" target=_blank>${esc(d.j||'ATL')}</a></li></ul></div>`,{maxWidth:340})}));setTyr()});
 const gcp=L.layerGroup(D.g.map((g,i)=>L.circleMarker([g.lat,g.lon],{radius:g.k==='gatvės linija'?4:6,color:g.k==='gatvės linija'?'#d63ccf':'#f2c200',weight:2,fillOpacity:.3}).bindPopup(`<b>${i+1}. ${esc(g.n)}</b><br>${esc(g.k)}<br>${g.lat}, ${g.lon}<br>Patikra be taško: ${g.l} m`)));
 const ctl=L.control.layers({'Google Maps':gmap,'Google palydovas':gsat,'Google hibridinis':ghyb,'Palydovas (Esri)':esri,'OpenStreetMap':osm},{'Archeologiniai radiniai':finds,'ATL tyrimai 1991–2023':tyr,'Kontroliniai taškai':gcp},{collapsed:true}).addTo(map);

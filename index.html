@@ -27,7 +27,7 @@ html,body{margin:0;height:100%;font:14px/1.45 system-ui,sans-serif} #map{positio
 #tk span{position:absolute;transform:translateX(-50%);font-size:10px;color:#666;white-space:nowrap}#tk span.hid{visibility:hidden}
 #tk span:before{content:'';position:absolute;left:50%;top:-4px;height:3px;border-left:1px solid #999}
 .relief{mix-blend-mode:multiply}</style></head><body><div id="map"></div>
-<details class="box"><summary>☰ Sluoksniai</summary><b>Rodyti žemėlapyje</b><label style="display:block"><input type="checkbox" class="lyr" data-l="relief"> ⛰️ Reljefas (LiDAR – matosi piliakalniai, pilkapiai; priartinkite)</label><label style="display:block"><input type="checkbox" class="lyr" data-l="vw" checked> 🎨 Paveikslai ir piešiniai</label><label style="display:block"><input type="checkbox" class="lyr" data-l="finds" checked> 📍 Svarbiausi radiniai ir vietos (mėlyni žymekliai, su nuotraukomis)</label><label style="display:block"><input type="checkbox" class="lyr" data-l="tyr" checked> 🟢 Visi ATL tyrimų įrašai (žali taškai, knygos „Archeologiniai tyrinėjimai Lietuvoje“ santraukos)</label><label style="display:block;margin-top:6px"><input type="checkbox" id="show" checked> Rodyti senuosius planus</label>
+<details class="box"><summary>☰ Sluoksniai</summary><b>Paieška</b><input id="q" type="search" placeholder="pvz. Kernavė, Ukmergė, Trakų pilis" style="width:calc(100% - 8px);margin:3px 0"><div id="qr" style="max-height:220px;overflow:auto;font-size:12px"></div><b>Rodyti žemėlapyje</b><label style="display:block"><input type="checkbox" class="lyr" data-l="kvr"> 🟠 Saugomi archeologijos paminklai iš Kultūros vertybių registro (~4100: piliakalniai, pilkapiai, kapinynai, gyvenvietės, akmenys)</label><label style="display:block"><input type="checkbox" class="lyr" data-l="relief"> ⛰️ Reljefas (LiDAR – matosi piliakalniai, pilkapiai; priartinkite)</label><label style="display:block"><input type="checkbox" class="lyr" data-l="vw" checked> 🎨 Paveikslai ir piešiniai</label><label style="display:block"><input type="checkbox" class="lyr" data-l="finds" checked> 📍 Svarbiausi radiniai ir vietos (mėlyni žymekliai, su nuotraukomis)</label><label style="display:block"><input type="checkbox" class="lyr" data-l="tyr" checked> 🟢 Visi ATL tyrimų įrašai (žali taškai, knygos „Archeologiniai tyrinėjimai Lietuvoje“ santraukos)</label><label style="display:block;margin-top:6px"><input type="checkbox" id="show" checked> Rodyti senuosius planus</label>
 <b>Transparency</b><input id="op" type="range" min="0" max="100" value="90">
 <b>Rodomas planas</b><div id="mn" style="font-size:12px;color:#555"></div>
 </details>
@@ -116,13 +116,29 @@ const VM=(D.v||[]).map(v=>{const ic=L.divIcon({className:'vwi',html:v.k==='map'?
 window.setViews=function(){vw.clearLayers();const c=CH[CI];VM.forEach(o=>{if(o.v.y>=c[0]&&o.v.y<c[1])vw.addLayer(o.mk)})}
 setViews();ctl.addOverlay(vw,'Paveikslai ir piešiniai');
 
-document.querySelectorAll('.lyr').forEach(e=>e.onchange=()=>{const L={vw,finds,tyr,relief}[e.dataset.l];e.checked?map.addLayer(L):map.removeLayer(L)});
-map.on('overlayadd overlayremove',ev=>{const k=ev.layer===vw?'vw':ev.layer===finds?'finds':ev.layer===tyr?'tyr':ev.layer===relief?'relief':null;if(k){const c=document.querySelector('.lyr[data-l='+k+']');if(c)c.checked=ev.type==='overlayadd'}});
+document.querySelectorAll('.lyr').forEach(e=>e.onchange=()=>{const L={vw,finds,tyr,relief,kvr}[e.dataset.l];e.checked?map.addLayer(L):map.removeLayer(L)});
+map.on('overlayadd overlayremove',ev=>{const k=ev.layer===vw?'vw':ev.layer===finds?'finds':ev.layer===tyr?'tyr':ev.layer===relief?'relief':ev.layer===kvr?'kvr':null;if(k){const c=document.querySelector('.lyr[data-l='+k+']');if(c)c.checked=ev.type==='overlayadd'}});
 
 // reljefas: LiDAR pagrindu sukurtas aukščių modelis (maps.lt, 10 m), šešėliavimas skaičiuojamas serveryje
 const RR=encodeURIComponent(JSON.stringify({rasterFunction:'Hillshade',rasterFunctionArguments:{Azimuth:315,Altitude:45,ZFactor:3}}));
 const Relief=L.TileLayer.extend({getTileUrl(c){const s=40075016.68557849/Math.pow(2,c.z),x0=-20037508.342789244+c.x*s,y1=20037508.342789244-c.y*s;return 'https://www.maps.lt/arcgis/rest/services/elevation/SEZP_10m_WM_dm/ImageServer/exportImage?bbox='+[x0,y1-s,x0+s,y1].join(',')+'&bboxSR=3857&imageSR=3857&size=256,256&format=png&f=image&renderingRule='+RR}});
 const relief=new Relief('',{bounds:[[53.85,20.9],[56.46,26.85]],minZoom:9,maxNativeZoom:17,maxZoom:21,opacity:.55,className:'relief',attribution:'Reljefas © maps.lt (nekomerciniam naudojimui)'});
 ctl.addOverlay(relief,'Reljefas (LiDAR, maps.lt)');
+
+// KVR: valstybės saugomi archeologijos paminklai (Kultūros vertybių registras, kvr.kpd.lt)
+const kvrR=L.canvas({padding:.3});const kvr=L.layerGroup();const KVM=[];
+fetch('kvr.json?v='+Math.floor(Date.now()/3e5)).then(r=>r.ok?r.json():[]).then(A=>{const T={K:'kompleksas',D:'komplekso dalis',V:'vietovė',P:'pavienis objektas'};A.forEach(a=>{L.circleMarker([a[3],a[4]],{renderer:kvrR,radius:4,color:'#7a4b16',weight:1.5,fillColor:'#e0a458',fillOpacity:.8}).bindPopup(`<div class=pp><h3>${esc(a[1])}</h3><div class=d>Kultūros vertybių registras · ${T[a[2]]||''}</div><div>Unikalus kodas: <b>${esc(a[0])}</b></div><div class=c>Valstybės saugomas archeologijos ar istorijos objektas; rodomas nepriklausomai nuo laiko juostos. Koordinatės – registro objekto centras.</div><b>Šaltinis</b><ul><li><a href="https://kvr.kpd.lt/#/static-heritage-search" target=_blank>Kultūros vertybių registras (paieška pagal kodą ${esc(a[0])})</a></li></ul></div>`,{maxWidth:320}).addTo(kvr);KVM.push({n:a[1]+' '+a[0],ll:[a[3],a[4]],mk:kvr.getLayers().slice(-1)[0]})})});
+ctl.addOverlay(kvr,'Saugomi paminklai (KVR)');
+
+// paieška per visus sluoksnius
+const norm=t=>String(t||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'');
+function qGo(o){if(o.y!=null)go(o.y);if(!map.hasLayer(o.g))map.addLayer(o.g);if(!o.g.hasLayer(o.mk))o.g.addLayer(o.mk);map.setView(o.ll,Math.max(map.getZoom(),15));setTimeout(()=>o.mk.openPopup(),300)}
+document.getElementById('q').oninput=e=>{const q=norm(e.target.value.trim());const box=document.getElementById('qr');if(q.length<3){box.innerHTML='';return}
+ const R=[];fm.forEach(o=>{if(norm(o.f.t+' '+o.f.txt).includes(q))R.push({t:'📍 '+o.f.t,ll:o.f.ll,y:o.f.pf!=null?Math.max(o.f.pf,-10000):2026,mk:o.mk,g:finds})});
+ VM.forEach(o=>{if(norm(o.v.t+' '+o.v.au+' '+o.v.txt).includes(q))R.push({t:'🎨 '+o.v.t+' ('+o.v.y+')',ll:o.v.ll,y:o.v.y,mk:o.mk,g:vw})});
+ KVM.forEach(o=>{if(norm(o.n).includes(q))R.push({t:'🟠 '+o.n,ll:o.ll,y:null,mk:o.mk,g:kvr})});
+ TY.forEach(o=>{if(norm(o.d.t+' '+o.d.a).includes(q))R.push({t:'🟢 '+o.d.t+' ('+o.d.y+')',ll:[o.d.lat,o.d.lon],y:o.d.pf?o.d.pf[0]:2026,mk:o.mk,g:tyr})});
+ window._QR=R.slice(0,60);box.innerHTML=(R.length?'':'Nerasta')+window._QR.map((r,i)=>`<div data-i="${i}" style="cursor:pointer;padding:2px 0;border-bottom:1px solid #eee">${esc(r.t)}</div>`).join('')+(R.length>60?`<div>… dar ${R.length-60}</div>`:'');
+ box.querySelectorAll('div[data-i]').forEach(d=>d.onclick=()=>qGo(window._QR[+d.dataset.i]))};
 if(window.GOOGLE_MAPS_KEY){const s=document.createElement('script');s.src='https://maps.googleapis.com/maps/api/js?key='+GOOGLE_MAPS_KEY;s.onload=()=>{const m=document.createElement('script');m.src='https://unpkg.com/leaflet.gridlayer.googlemutant@0.14.1/dist/Leaflet.GoogleMutant.js';m.onload=()=>{const gs=L.gridLayer.googleMutant({type:'satellite',maxZoom:21}),gr=L.gridLayer.googleMutant({type:'roadmap',maxZoom:21});ctl.addBaseLayer(gs,'Google palydovas');ctl.addBaseLayer(gr,'Google Maps');};document.head.appendChild(m)};document.head.appendChild(s)}
 </script></body></html>

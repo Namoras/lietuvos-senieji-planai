@@ -16,10 +16,10 @@ html,body{margin:0;height:100%;font:14px/1.45 system-ui,sans-serif} #map{positio
 #ages{position:absolute;left:0;right:0;top:0;height:16px}
 #ages div{position:absolute;top:0;height:16px;font-size:10.5px;line-height:16px;color:#333;overflow:hidden;white-space:nowrap;text-align:center;border-right:1px solid #fff}
 #mk{position:absolute;left:0;right:0;top:18px;height:14px}
-#mk span{position:absolute;transform:translateX(-50%);font-size:10px;color:#fff;background:#c0392b;border-radius:3px;padding:0 3px;cursor:pointer;line-height:13px;white-space:nowrap}
+#mk span{position:absolute;transform:translateX(-50%);font-size:10px;color:#fff;background:#c0392b;border-radius:3px;padding:0 3px;cursor:pointer;line-height:13px;white-space:nowrap}#mk span{z-index:2}#mk span.dot{z-index:1;width:3px;height:9px;padding:0;margin-top:2px;font-size:0;border-radius:2px;opacity:.8}
 #ms{position:absolute;left:0;right:0;top:30px;width:100%;margin:0}
 #tk{position:absolute;left:0;right:0;top:50px;height:14px}
-#tk span{position:absolute;transform:translateX(-50%);font-size:10px;color:#666;white-space:nowrap}
+#tk span{position:absolute;transform:translateX(-50%);font-size:10px;color:#666;white-space:nowrap}#tk span.hid{visibility:hidden}
 #tk span:first-child{transform:none}#tk span:last-child{transform:translateX(-100%)}#tk span:before{content:'';position:absolute;left:50%;top:-5px;height:4px;border-left:1px solid #999}
 @media(max-width:700px){#tk span.m{display:none}}
 </style></head><body><div id="map"></div>
@@ -55,8 +55,16 @@ document.getElementById('ages').innerHTML=AG.map(a=>`<div title="${a[2]}: ${fy(a
 document.getElementById('ages').innerHTML+=WR.map(w=>`<div title="${w[2]}: ${w[0]}–${w[1]}" style="left:${pos(w[0])*100}%;width:${Math.max(0.25,(pos(w[1])-pos(w[0]))*100)}%;top:12px;height:4px;background:#000"></div>`).join('');
 document.getElementById('mk').innerHTML=D.m.map((m,i)=>`<span data-y="${m.y}" title="${m.n}" style="left:${pos(m.y)*100}%">${m.y}</span>`).join('');
 document.querySelectorAll('#mk span').forEach(e=>e.onclick=()=>{setIdx(YS.indexOf(+e.dataset.y));ms.oninput()});
+// ženklai rodomi tik jei telpa; persidengiantys paslepiami
+function fit(){
+ const ov=(a,b)=>a.right+4>b.left;
+ const tks=[...document.querySelectorAll('#tk span')];tks.forEach(e=>e.classList.remove('hid'));const lr=tks[tks.length-1].getBoundingClientRect();let last=null;tks.slice(0,-1).forEach(e=>{const r=e.getBoundingClientRect();if((last&&ov(last,r))||ov(r,lr))e.classList.add('hid');else last=r});
+ last=null;document.querySelectorAll('#mk span').forEach(e=>{e.classList.remove('dot');const r=e.getBoundingClientRect();if(last&&ov(last,r))e.classList.add('dot');else last=r});
+ document.querySelectorAll('#ages div').forEach(e=>{if(!e.dataset.t)e.dataset.t=e.textContent;e.textContent=e.dataset.t;if(e.scrollWidth>e.clientWidth+1)e.textContent=''});
+}
+window.addEventListener('resize',fit);setTimeout(fit,0);
 const TK=[[-10000,0],[-6000,1],[-2000,0],[0,0],[500,1],[1000,0],[1250,0],[1400,1],[1500,0],[1600,1],[1700,0],[1800,0],[1850,1],[1900,0],[2026,0]];
-document.getElementById('tk').innerHTML=TK.map(t=>`<span class="${t[1]?'m':''}" style="left:${pos(t[0])*100}%">${t[0]<0?(-t[0])+' pr. Kr.':t[0]}</span>`).join('');
+document.getElementById('tk').innerHTML=TK.map(t=>`<span class="${t[1]?'m':''}" style="left:${pos(t[0])*100}%">${t[0]<0?(-t[0]/1000)+' tūkst. pr. Kr.':t[0]}</span>`).join('');
 setIdx(YS.indexOf(1581));
 const yv=()=>YS[cur_i()];
 // rodoma, jei radinio laikotarpis persidengia su pasirinktu intervalu; nedatuoti – tik paskutiniame (2026) taške

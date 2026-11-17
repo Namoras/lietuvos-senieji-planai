@@ -25,7 +25,7 @@ html,body{margin:0;height:100%;font:14px/1.45 system-ui,sans-serif} #map{positio
 </style></head><body><div id="map"></div>
 <details class="box"><summary><b>Senieji planai</b> <label style="font-weight:400;margin-left:8px" onclick="event.stopPropagation()"><input type="checkbox" id="show" checked> rodyti</label></summary>
 <b>Transparency</b><input id="op" type="range" min="0" max="100" value="90">
-<b>Rodomas planas</b><div id="mn" style="font-size:12px;color:#555"></div>
+<b>Rodomas planas</b><div id="mn" style="font-size:12px;color:#555"></div><b>Visi planai</b><div id="ml" style="font-size:12px;max-height:40vh;overflow:auto"></div>
 </details>
 <div id="tl"><div class="yrbig" id="my"></div><div id="tw"><div id="ages"></div><div id="mk"></div><input id="ms" type="range" min="0" max="1" value="0"><div id="tk"></div></div></div>
 <script>
@@ -63,13 +63,16 @@ const yv=()=>YS[cur_i()];
 const inR=(a,b)=>{const i=cur_i(),lo=YS[i],hi=i<YS.length-1?YS[i+1]-1:9999;if(a==null)return i===YS.length-1;return a<=hi&&(b==null?9999:b)>=lo};
 let cur=[];
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-function setMap(){const y=yv();const a=AG.find(a=>y>=a[0]&&y<a[1])||AG[AG.length-1];const w=WR.find(w=>y>=w[0]&&y<=w[1]);document.getElementById('my').textContent=fy(y)+' · '+a[2]+(w?' · '+w[2]:'');const K={};D.m.forEach((m,i)=>{const c=m.c||'Vilnius';if(m.y<=y&&(!m.to||y<=m.to))K[c]=i});
+const HID=new Set();
+function setMap(){const y=yv();const a=AG.find(a=>y>=a[0]&&y<a[1])||AG[AG.length-1];const w=WR.find(w=>y>=w[0]&&y<=w[1]);document.getElementById('my').textContent=fy(y)+' · '+a[2]+(w?' · '+w[2]:'');const K={};D.m.forEach((m,i)=>{const c=m.c||'Vilnius';if(!HID.has(i)&&m.y<=y&&(!m.to||y<=m.to))K[c]=i});
  cur.forEach(l=>map.removeLayer(l));cur=[];
  const area=m=>Math.abs((m.b[1][0]-m.b[0][0])*(m.b[1][1]-m.b[0][1]));const ks=Object.values(K).sort((a,b)=>area(D.m[b])-area(D.m[a]));if(!ks.length){document.getElementById('mn').textContent='Senesnio plano nėra';return}
  if(!document.getElementById('show').checked){document.getElementById('mn').textContent='Planai išjungti';return}
  ks.forEach(k=>{const l=ML[k].addTo(map);l.setOpacity(document.getElementById('op').value/100);cur.push(l)});
  document.getElementById('mn').innerHTML=Object.entries(K).map(([c,k])=>`<b>${c}:</b> ${D.m[k].y} m. ${esc(D.m[k].n)}`).join('<br>')}
-ms.oninput=()=>{setMap();setFinds();window.setTyr&&setTyr()}; document.getElementById('show').onchange=()=>setMap();document.getElementById('op').oninput=e=>cur.forEach(l=>l.setOpacity(e.target.value/100)); setMap();
+ms.oninput=()=>{setMap();setFinds();window.setTyr&&setTyr()}; document.getElementById('show').onchange=()=>setMap();
+document.getElementById('ml').innerHTML=D.m.map((m,i)=>`<label style="display:block"><input type="checkbox" data-i="${i}" checked> ${m.c||'Vilnius'} · ${m.y} m. – ${esc(m.n)}</label>`).join('');
+document.querySelectorAll('#ml input').forEach(e=>e.onchange=()=>{e.checked?HID.delete(+e.dataset.i):HID.add(+e.dataset.i);setMap()});document.getElementById('op').oninput=e=>cur.forEach(l=>l.setOpacity(e.target.value/100)); setMap();
 const fm=D.f.map(f=>{const img=f.img?`img/${f.img}`:f.web_img;
  const mk=L.marker(f.ll,{title:f.t}).bindPopup(`<div class=pp><h3>${esc(f.t)}</h3><div class=d>Laikotarpis: ${esc(f.per)} · Tyrimai: ${esc(f.d)}</div>`+(img?`<img src="${img}" alt="">`+(f.gal?`<div style="display:flex;gap:3px;flex-wrap:wrap;margin-top:3px">${f.gal.map(g=>`<a href="${g}" target=_blank><img src="${g}" style="width:54px;height:40px;object-fit:cover;border-radius:3px"></a>`).join('')}</div>`:'')+`<div class=c><a href="${f.capu}" target=_blank>${esc(f.cap)}</a></div>`:'')+`<div>${esc(f.txt)}</div><div class=c>Vieta apytikslė (pagal adresą)</div><b>Šaltiniai</b><ul>${f.src.map(s=>`<li><a href="${s[1]}" target=_blank>${esc(s[0])}</a></li>`).join('')}</ul></div>`,{maxWidth:320});
  return {f,mk}});

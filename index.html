@@ -26,8 +26,8 @@ html,body{margin:0;height:100%;font:14px/1.45 system-ui,sans-serif} #map{positio
 #tk{position:absolute;left:0;right:0;top:36px;height:14px}
 #tk span{position:absolute;transform:translateX(-50%);font-size:10px;color:#666;white-space:nowrap}#tk span.hid{visibility:hidden}
 #tk span:before{content:'';position:absolute;left:50%;top:-4px;height:3px;border-left:1px solid #999}
-</style></head><body><div id="map"></div>
-<details class="box"><summary>☰ Sluoksniai</summary><b>Rodyti žemėlapyje</b><label style="display:block"><input type="checkbox" class="lyr" data-l="vw" checked> 🎨 Paveikslai ir piešiniai</label><label style="display:block"><input type="checkbox" class="lyr" data-l="finds" checked> 📍 Svarbiausi radiniai ir vietos (mėlyni žymekliai, su nuotraukomis)</label><label style="display:block"><input type="checkbox" class="lyr" data-l="tyr" checked> 🟢 Visi ATL tyrimų įrašai (žali taškai, knygos „Archeologiniai tyrinėjimai Lietuvoje“ santraukos)</label><label style="display:block;margin-top:6px"><input type="checkbox" id="show" checked> Rodyti senuosius planus</label>
+.relief{mix-blend-mode:multiply}</style></head><body><div id="map"></div>
+<details class="box"><summary>☰ Sluoksniai</summary><b>Rodyti žemėlapyje</b><label style="display:block"><input type="checkbox" class="lyr" data-l="relief"> ⛰️ Reljefas (LiDAR – matosi piliakalniai, pilkapiai; priartinkite)</label><label style="display:block"><input type="checkbox" class="lyr" data-l="vw" checked> 🎨 Paveikslai ir piešiniai</label><label style="display:block"><input type="checkbox" class="lyr" data-l="finds" checked> 📍 Svarbiausi radiniai ir vietos (mėlyni žymekliai, su nuotraukomis)</label><label style="display:block"><input type="checkbox" class="lyr" data-l="tyr" checked> 🟢 Visi ATL tyrimų įrašai (žali taškai, knygos „Archeologiniai tyrinėjimai Lietuvoje“ santraukos)</label><label style="display:block;margin-top:6px"><input type="checkbox" id="show" checked> Rodyti senuosius planus</label>
 <b>Transparency</b><input id="op" type="range" min="0" max="100" value="90">
 <b>Rodomas planas</b><div id="mn" style="font-size:12px;color:#555"></div>
 </details>
@@ -116,7 +116,13 @@ const VM=(D.v||[]).map(v=>{const ic=L.divIcon({className:'vwi',html:v.k==='map'?
 window.setViews=function(){vw.clearLayers();const c=CH[CI];VM.forEach(o=>{if(o.v.y>=c[0]&&o.v.y<c[1])vw.addLayer(o.mk)})}
 setViews();ctl.addOverlay(vw,'Paveikslai ir piešiniai');
 
-document.querySelectorAll('.lyr').forEach(e=>e.onchange=()=>{const L={vw,finds,tyr}[e.dataset.l];e.checked?map.addLayer(L):map.removeLayer(L)});
-map.on('overlayadd overlayremove',ev=>{const k=ev.layer===vw?'vw':ev.layer===finds?'finds':ev.layer===tyr?'tyr':null;if(k){const c=document.querySelector('.lyr[data-l='+k+']');if(c)c.checked=ev.type==='overlayadd'}});
+document.querySelectorAll('.lyr').forEach(e=>e.onchange=()=>{const L={vw,finds,tyr,relief}[e.dataset.l];e.checked?map.addLayer(L):map.removeLayer(L)});
+map.on('overlayadd overlayremove',ev=>{const k=ev.layer===vw?'vw':ev.layer===finds?'finds':ev.layer===tyr?'tyr':ev.layer===relief?'relief':null;if(k){const c=document.querySelector('.lyr[data-l='+k+']');if(c)c.checked=ev.type==='overlayadd'}});
+
+// reljefas: LiDAR pagrindu sukurtas aukščių modelis (maps.lt, 10 m), šešėliavimas skaičiuojamas serveryje
+const RR=encodeURIComponent(JSON.stringify({rasterFunction:'Hillshade',rasterFunctionArguments:{Azimuth:315,Altitude:45,ZFactor:3}}));
+const Relief=L.TileLayer.extend({getTileUrl(c){const s=40075016.68557849/Math.pow(2,c.z),x0=-20037508.342789244+c.x*s,y1=20037508.342789244-c.y*s;return 'https://www.maps.lt/arcgis/rest/services/elevation/SEZP_10m_WM_dm/ImageServer/exportImage?bbox='+[x0,y1-s,x0+s,y1].join(',')+'&bboxSR=3857&imageSR=3857&size=256,256&format=png&f=image&renderingRule='+RR}});
+const relief=new Relief('',{bounds:[[53.85,20.9],[56.46,26.85]],minZoom:9,maxNativeZoom:17,maxZoom:21,opacity:.55,className:'relief',attribution:'Reljefas © maps.lt (nekomerciniam naudojimui)'});
+ctl.addOverlay(relief,'Reljefas (LiDAR, maps.lt)');
 if(window.GOOGLE_MAPS_KEY){const s=document.createElement('script');s.src='https://maps.googleapis.com/maps/api/js?key='+GOOGLE_MAPS_KEY;s.onload=()=>{const m=document.createElement('script');m.src='https://unpkg.com/leaflet.gridlayer.googlemutant@0.14.1/dist/Leaflet.GoogleMutant.js';m.onload=()=>{const gs=L.gridLayer.googleMutant({type:'satellite',maxZoom:21}),gr=L.gridLayer.googleMutant({type:'roadmap',maxZoom:21});ctl.addBaseLayer(gs,'Google palydovas');ctl.addBaseLayer(gr,'Google Maps');};document.head.appendChild(m)};document.head.appendChild(s)}
 </script></body></html>

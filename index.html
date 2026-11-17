@@ -29,7 +29,7 @@ html,body{margin:0;height:100%;font:14px/1.45 system-ui,sans-serif} #map{positio
 .relief{mix-blend-mode:multiply}</style></head><body><div id="map"></div>
 <details class="box"><summary>☰ Sluoksniai</summary><b>Paieška</b><input id="q" type="search" placeholder="pvz. Kernavė, Ukmergė, Trakų pilis" style="width:calc(100% - 8px);margin:3px 0"><div id="qr" style="max-height:220px;overflow:auto;font-size:12px"></div><b>Rodyti žemėlapyje</b><label style="display:block"><input type="checkbox" class="lyr" data-l="brd" checked> ➖ LDK / ATR sienos tais metais (apytikslės)</label><label style="display:block"><input type="checkbox" class="lyr" data-l="kvr"> 🟠 Saugomi archeologijos paminklai iš Kultūros vertybių registro (~4100; 🔴 didesni – su senomis nuotraukomis iš muziejų ir archyvų, ~370)</label><label style="display:block"><input type="checkbox" class="lyr" data-l="relief"> ⛰️ Reljefas (LiDAR – matosi piliakalniai, pilkapiai; priartinkite)</label><label style="display:block"><input type="checkbox" class="lyr" data-l="vw" checked> 🎨 Paveikslai ir piešiniai</label><label style="display:block"><input type="checkbox" class="lyr" data-l="finds" checked> 📍 Svarbiausi radiniai ir vietos (mėlyni žymekliai, su nuotraukomis)</label><label style="display:block"><input type="checkbox" class="lyr" data-l="tyr" checked> 🟢 Visi ATL tyrimų įrašai (žali taškai, knygos „Archeologiniai tyrinėjimai Lietuvoje“ santraukos)</label><label style="display:block;margin-top:6px"><input type="checkbox" id="show" checked> Rodyti senuosius planus</label>
 <b>Transparency</b><input id="op" type="range" min="0" max="100" value="90">
-<b>Rodomas planas</b><div id="mn" style="font-size:12px;color:#555"></div>
+<b>Rodomas planas</b><div id="mn" style="font-size:12px;color:#555"></div><div id="mt" style="font-size:12px;color:#555;margin-top:4px"></div>
 </details>
 <div id="tl"><div class="r1"><button id="pv" title="Ankstesnis planas">◀ planas</button><div id="my"></div><button id="nx" title="Kitas planas">planas ▶</button></div><div id="ages"></div><div id="tw"><div id="mk"></div><input id="ms" type="range" min="0" max="1" value="0"><div id="tk"></div></div></div>
 <script>
@@ -77,7 +77,7 @@ function render(){
  document.getElementById('pv').disabled=!PY.some(y=>y<Y);document.getElementById('nx').disabled=!PY.some(y=>y>Y);
  setTimeout(fit,0)}
 function go(y){Y=y;render();ms.oninput&&update()}
-function update(){setMap();setFinds();window.setTyr&&setTyr();window.setViews&&setViews();window.setBorders&&setBorders()}
+function update(){setMap();setFinds();window.setTyr&&setTyr();window.setViews&&setViews();window.setBorders&&setBorders();window.setTopo&&setTopo()}
 document.getElementById('pv').onclick=()=>{const p=PY.filter(y=>y<Y);if(p.length)go(p[p.length-1])};
 document.getElementById('nx').onclick=()=>{const n=PY.find(y=>y>Y);if(n!=null)go(n)};
 render();
@@ -87,7 +87,7 @@ const yv=()=>Y;
 const inR=(a,b)=>{const i=cur_i(),lo=YS[i],hi=i<YS.length-1?YS[i+1]-1:9999;if(a==null)return i===YS.length-1;return a<=hi&&(b==null?9999:b)>=lo};
 let cur=[];
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-const HID=new Set();
+const HID=new Set();D.m.forEach((m,i)=>{if(m.c==='LDK')HID.add(i)}); // dideli regioniniai žemėlapiai išjungti iš pradžių
 function setMap(){const y=yv();const a=AG.find(a=>y>=a[0]&&y<a[1])||AG[AG.length-1];const w=WR.find(w=>y>=w[0]&&y<=w[1]);document.getElementById('my').textContent=fy(y)+' · '+a[2]+(w?' · '+w[2]:'');const K={};D.m.forEach((m,i)=>{const c=m.c||'Vilnius';if(m.y<=y&&(!m.to||y<=m.to))K[c]=i});
  cur.forEach(l=>map.removeLayer(l));cur=[];
  const area=m=>Math.abs((m.b[1][0]-m.b[0][0])*(m.b[1][1]-m.b[0][1]));const ks=Object.values(K).sort((a,b)=>area(D.m[b])-area(D.m[a]));if(!ks.length){document.getElementById('mn').textContent='Senesnio plano nėra';return}
@@ -95,8 +95,8 @@ function setMap(){const y=yv();const a=AG.find(a=>y>=a[0]&&y<a[1])||AG[AG.length
  ks.filter(k=>!HID.has(k)).forEach(k=>{const l=ML[k].addTo(map);l.setOpacity(document.getElementById('op').value/100);cur.push(l)});
  document.getElementById('mn').innerHTML=Object.entries(K).map(([c,k])=>`<label style="display:block"><input type="checkbox" data-i="${k}" ${HID.has(k)?'':'checked'}> <b>${c}:</b> ${D.m[k].y} m. ${esc(D.m[k].n)}</label>`).join('');
  document.querySelectorAll('#mn input').forEach(e=>e.onchange=()=>{e.checked?HID.delete(+e.dataset.i):HID.add(+e.dataset.i);setMap()})}
-ms.onchange=()=>{ms.value=Y};ms.oninput=()=>{const v=+ms.value;const sp=(CH[CI][1]-CH[CI][0])/60;const pn=PY.find(p=>Math.abs(p-v)<=sp&&p>=CH[CI][0]&&p<=CH[CI][1]);Y=pn!=null?pn:LS.reduce((a,b)=>Math.abs(b-v)<Math.abs(a-v)?b:a);update();document.getElementById('pv').disabled=!PY.some(y=>y<Y);document.getElementById('nx').disabled=!PY.some(y=>y>Y)}; document.getElementById('show').onchange=()=>setMap();
-document.getElementById('op').oninput=e=>cur.forEach(l=>l.setOpacity(e.target.value/100)); setMap();
+ms.onchange=()=>{ms.value=Y};ms.oninput=()=>{const v=+ms.value;const sp=(CH[CI][1]-CH[CI][0])/60;const pn=PY.find(p=>Math.abs(p-v)<=sp&&p>=CH[CI][0]&&p<=CH[CI][1]);Y=pn!=null?pn:LS.reduce((a,b)=>Math.abs(b-v)<Math.abs(a-v)?b:a);update();document.getElementById('pv').disabled=!PY.some(y=>y<Y);document.getElementById('nx').disabled=!PY.some(y=>y>Y)}; document.getElementById('show').onchange=()=>{setMap();window.setTopo&&setTopo()};
+document.getElementById('op').oninput=e=>{cur.forEach(l=>l.setOpacity(e.target.value/100));TOPO.forEach(t=>t.l.setOpacity(e.target.value/100))}; setMap();
 const fm=D.f.map(f=>{const img=f.img?`img/${f.img}`:f.web_img;
  const mk=L.marker(f.ll,{title:f.t}).bindPopup(`<div class=pp><h3>${esc(f.t)}</h3><div class=d>Laikotarpis: ${esc(f.per)} · Tyrimai: ${esc(f.d)}</div>`+(img?`<img src="${img}" alt="">`+(f.gal?`<div style="display:flex;gap:3px;flex-wrap:wrap;margin-top:3px">${f.gal.map(g=>`<a href="${g}" target=_blank><img src="${g}" style="width:54px;height:40px;object-fit:cover;border-radius:3px"></a>`).join('')}</div>`:'')+`<div class=c><a href="${f.capu}" target=_blank>${esc(f.cap)}</a></div>`:'')+`<div>${esc(f.txt)}</div><div class=c>Vieta apytikslė (pagal adresą)</div><b>Šaltiniai</b><ul>${f.src.map(s=>`<li><a href="${s[1]}" target=_blank>${esc(s[0])}</a></li>`).join('')}</ul></div>`,{maxWidth:320});
  return {f,mk}});
@@ -146,5 +146,23 @@ const brd=L.layerGroup().addTo(map);let BR=[];
 window.setBorders=function(){brd.clearLayers();BR.filter(b=>Y>=b.y&&Y<=b.to).forEach(b=>L.geoJSON(b.g,{style:{color:'#b8860b',weight:2.5,dashArray:'8 5',fill:true,fillOpacity:.04,interactive:false}}).addTo(brd))};
 fetch('sienos.json?v='+Math.floor(Date.now()/3e5)).then(r=>r.ok?r.json():[]).then(a=>{BR=a;setBorders()});
 ctl.addOverlay(brd,'Valstybės sienos');
+
+// istoriniai topografiniai žemėlapiai (LMA Vrublevskių biblioteka, ArcGIS plytelės; rodoma tiesiai iš šaltinio)
+const TB='https://tiles.arcgis.com/tiles/kla6QEoN1wAmqwT1/arcgis/rest/services/';
+const TOPO=[
+ {y:1840,to:1913,n:'Rusų 3 varstų žemėlapis (1:126 000), 1874',s:'Rusiski_126000',z:16},
+ {y:1878,to:1913,n:'Vokiečių Karte des Deutschen Reiches (1:100 000), 1878–1909 – Mažoji Lietuva',s:'Vokiski_100000_Deutchen_Reiches',z:16},
+ {y:1914,to:1926,n:'Vokiečių Karte des westlichen Russlands (1:100 000), 1914–1921',s:'Vokiski_100000_Ruslands',z:16},
+ {y:1914,to:1926,n:'Vokiečių generalinio štabo žemėlapis (1:100 000), 1915 – I dalis',s:'Vokiski_100000_Generalstabes_der_Armee_1dalis',z:16},
+ {y:1914,to:1926,n:'Vokiečių generalinio štabo žemėlapis (1:100 000), 1915 – II dalis',s:'Vokiski_100000_Generalstabes_der_Armee_2dalis',z:16},
+ {y:1927,to:1940,n:'Lenkų WIG žemėlapis (1:100 000), 1926–1935 – Vilniaus kraštas',s:'Lenkiski_100000',z:16},
+ {y:1927,to:1940,n:'Lietuvos kariuomenės žemėlapis (1:100 000), 1933–1940',s:'Lietuviski_100000',z:16},
+ {y:1927,to:1940,n:'Lietuvos kariuomenės žemėlapis (1:25 000), 1927–1940 – kaimų lygmuo',s:'Lietuviski_25000',z:17}];
+TOPO.forEach(t=>t.l=L.tileLayer(TB+t.s+'/MapServer/tile/{z}/{y}/{x}',{maxNativeZoom:t.z,maxZoom:21,zIndex:150,opacity:.9,attribution:'Topografiniai žemėlapiai © LMA Vrublevskių biblioteka'}));
+const HT=new Set();
+window.setTopo=function(){const show=document.getElementById('show').checked;TOPO.forEach((t,i)=>{const on=show&&Y>=t.y&&Y<=t.to&&!HT.has(i);if(on&&!map.hasLayer(t.l))map.addLayer(t.l);if(!on&&map.hasLayer(t.l))map.removeLayer(t.l);t.l.setOpacity(document.getElementById('op').value/100)});
+ const act=TOPO.map((t,i)=>[t,i]).filter(([t])=>Y>=t.y&&Y<=t.to);document.getElementById('mt').innerHTML=act.length?'<b>Topografiniai žemėlapiai</b>'+act.map(([t,i])=>`<label style="display:block"><input type="checkbox" data-t="${i}" ${HT.has(i)?'':'checked'}> ${esc(t.n)}</label>`).join(''):'';
+ document.querySelectorAll('#mt input').forEach(e=>e.onchange=()=>{e.checked?HT.delete(+e.dataset.t):HT.add(+e.dataset.t);setTopo()})};
+setTopo();
 if(window.GOOGLE_MAPS_KEY){const s=document.createElement('script');s.src='https://maps.googleapis.com/maps/api/js?key='+GOOGLE_MAPS_KEY;s.onload=()=>{const m=document.createElement('script');m.src='https://unpkg.com/leaflet.gridlayer.googlemutant@0.14.1/dist/Leaflet.GoogleMutant.js';m.onload=()=>{const gs=L.gridLayer.googleMutant({type:'satellite',maxZoom:21}),gr=L.gridLayer.googleMutant({type:'roadmap',maxZoom:21});ctl.addBaseLayer(gs,'Google palydovas');ctl.addBaseLayer(gr,'Google Maps');};document.head.appendChild(m)};document.head.appendChild(s)}
 </script></body></html>

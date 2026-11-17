@@ -40,7 +40,7 @@ gmap.addTo(map);
 const ML=D.m.map(m=>L.imageOverlay(m.u+'?v='+Math.floor(Date.now()/3e5),m.b,{opacity:.9,attribution:m.n}));
 const ms=document.getElementById('ms');
 // netolygi laiko skalė: priešistorė kas 500 m., 0–1200 kas 100 m., 1200–1800 kas 50 m., 1800–2020 kas 20 m.
-const ST=new Set();for(let y=-10000;y<0;y+=500)ST.add(y);for(let y=0;y<1200;y+=100)ST.add(y);for(let y=1200;y<1800;y+=50)ST.add(y);for(let y=1800;y<1900;y+=20)ST.add(y);for(let y=1900;y<=2020;y+=20)ST.add(y);ST.add(2026);[1569,1655,1661,1795,1812,1831,1863,1915,1918,1920,1939,1940,1941,1944,1990].forEach(y=>ST.add(y));D.m.forEach(m=>ST.add(m.y));
+const ST=new Set();for(let y=-10000;y<0;y+=500)ST.add(y);for(let y=0;y<1200;y+=100)ST.add(y);for(let y=1200;y<1800;y+=50)ST.add(y);for(let y=1800;y<1900;y+=20)ST.add(y);for(let y=1900;y<=2020;y+=20)if(y<1945||y>1989)ST.add(y);ST.add(2026);[1569,1655,1661,1795,1812,1831,1863,1915,1918,1920,1939,1940,1941,1944,1990].forEach(y=>ST.add(y));D.m.forEach(m=>ST.add(m.y));
 const YS=[...ST].sort((a,b)=>a-b);ms.max=YS.length-1;
 const pos=y=>{if(y<=YS[0])return 0;for(let i=1;i<YS.length;i++)if(y<=YS[i])return (i-1+(y-YS[i-1])/(YS[i]-YS[i-1]))/(YS.length-1);return 1};
 const fy=y=>y<0?(-y)+' m. pr. Kr.':y+' m.';
@@ -51,7 +51,7 @@ document.getElementById('ages').innerHTML=AG.map(a=>`<div title="${a[2]}: ${fy(a
 document.getElementById('ages').innerHTML+=WR.map(w=>`<div title="${w[2]}: ${w[0]}–${w[1]}" style="left:${pos(w[0])*100}%;width:${Math.max(0.25,(pos(w[1])-pos(w[0]))*100)}%;top:12px;height:4px;background:#000"></div>`).join('');
 document.getElementById('mk').innerHTML=D.m.map((m,i)=>`<span data-y="${m.y}" title="${m.n}" style="left:${pos(m.y)*100}%">${m.y}</span>`).join('');
 document.querySelectorAll('#mk span').forEach(e=>e.onclick=()=>{ms.value=YS.indexOf(+e.dataset.y);ms.oninput()});
-const TK=[[-10000,0],[-6000,1],[-2000,0],[0,0],[500,1],[1000,0],[1250,0],[1400,1],[1500,0],[1600,1],[1700,0],[1800,0],[1850,1],[1900,0],[1920,1],[1940,1],[1950,1],[1990,1],[2026,0]];
+const TK=[[-10000,0],[-6000,1],[-2000,0],[0,0],[500,1],[1000,0],[1250,0],[1400,1],[1500,0],[1600,1],[1700,0],[1800,0],[1850,1],[1900,0],[1920,1],[1940,1],[1990,1],[2026,0]];
 document.getElementById('tk').innerHTML=TK.map(t=>`<span class="${t[1]?'m':''}" style="left:${pos(t[0])*100}%">${t[0]<0?(-t[0])+' pr. Kr.':t[0]}</span>`).join('');
 ms.value=YS.indexOf(1581);
 const yv=()=>YS[+ms.value];

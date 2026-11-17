@@ -159,7 +159,7 @@ const TOPO=[
  {y:1927,to:1940,n:'Lietuvos kariuomenės žemėlapis (1:100 000), 1933–1940',s:'Lietuviski_100000',z:16},
  {y:1927,to:1940,n:'Lietuvos kariuomenės žemėlapis (1:25 000), 1927–1940 – kaimų lygmuo',s:'Lietuviski_25000',z:17}];
 TOPO.forEach(t=>t.l=L.tileLayer(TB+t.s+'/MapServer/tile/{z}/{y}/{x}',{maxNativeZoom:t.z,maxZoom:21,zIndex:150,opacity:.9,attribution:'Topografiniai žemėlapiai © LMA Vrublevskių biblioteka'}));
-const HT=new Set();
+const HT=new Set();TOPO.forEach((t,i)=>{if(/Rusiski_126000|Generalstabes/.test(t.s))HT.add(i)}); // neryškūs / pasikartojantys – išjungti iš pradžių
 window.setTopo=function(){const show=document.getElementById('show').checked;TOPO.forEach((t,i)=>{const on=show&&Y>=t.y&&Y<=t.to&&!HT.has(i);if(on&&!map.hasLayer(t.l))map.addLayer(t.l);if(!on&&map.hasLayer(t.l))map.removeLayer(t.l);t.l.setOpacity(document.getElementById('op').value/100)});
  const act=TOPO.map((t,i)=>[t,i]).filter(([t])=>Y>=t.y&&Y<=t.to);document.getElementById('mt').innerHTML=act.length?'<b>Topografiniai žemėlapiai</b>'+act.map(([t,i])=>`<label style="display:block"><input type="checkbox" data-t="${i}" ${HT.has(i)?'':'checked'}> ${esc(t.n)}</label>`).join(''):'';
  document.querySelectorAll('#mt input').forEach(e=>e.onchange=()=>{e.checked?HT.delete(+e.dataset.t):HT.add(+e.dataset.t);setTopo()})};

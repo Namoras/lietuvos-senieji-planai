@@ -40,7 +40,7 @@ gmap.addTo(map);
 const ML=D.m.map(m=>L.imageOverlay(m.u+'?v='+Math.floor(Date.now()/3e5),m.b,{opacity:.9,attribution:m.n}));
 const ms=document.getElementById('ms');
 // netolygi laiko skalė: priešistorė kas 500 m., 0–1200 kas 100 m., 1200–1800 kas 50 m., 1800–2020 kas 20 m.
-const ST=new Set();for(let y=-10000;y<0;y+=500)ST.add(y);for(let y=0;y<1200;y+=100)ST.add(y);for(let y=1200;y<1800;y+=50)ST.add(y);for(let y=1800;y<1900;y+=20)ST.add(y);for(let y=1900;y<=2025;y+=5)ST.add(y);ST.add(2026);[1569,1655,1661,1795,1812,1831,1863,1915,1918,1920,1939,1940,1941,1944,1990].forEach(y=>ST.add(y));D.m.forEach(m=>ST.add(m.y));
+const ST=new Set();for(let y=-10000;y<0;y+=500)ST.add(y);for(let y=0;y<1200;y+=100)ST.add(y);for(let y=1200;y<1800;y+=50)ST.add(y);for(let y=1800;y<1900;y+=20)ST.add(y);for(let y=1900;y<=2020;y+=20)ST.add(y);ST.add(2026);[1569,1655,1661,1795,1812,1831,1863,1915,1918,1920,1939,1940,1941,1944,1990].forEach(y=>ST.add(y));D.m.forEach(m=>ST.add(m.y));
 const YS=[...ST].sort((a,b)=>a-b);ms.max=YS.length-1;
 const pos=y=>{if(y<=YS[0])return 0;for(let i=1;i<YS.length;i++)if(y<=YS[i])return (i-1+(y-YS[i-1])/(YS[i]-YS[i-1]))/(YS.length-1);return 1};
 const fy=y=>y<0?(-y)+' m. pr. Kr.':y+' m.';

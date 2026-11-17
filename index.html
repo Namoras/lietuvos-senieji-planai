@@ -42,8 +42,14 @@ const ms=document.getElementById('ms');
 // netolygi laiko skalė: priešistorė kas 500 m., 0–1200 kas 100 m., 1200–1800 kas 50 m., 1800–2020 kas 20 m.
 const ST=new Set();for(let y=-10000;y<0;y+=500)ST.add(y);for(let y=0;y<1200;y+=100)ST.add(y);for(let y=1200;y<1800;y+=50)ST.add(y);for(let y=1800;y<1900;y+=20)ST.add(y);for(let y=1900;y<=2020;y+=20)if(y<1945||y>1989)ST.add(y);ST.add(2026);[1569,1655,1661,1795,1812,1831,1863,1915,1918,1920,1939,1940,1941,1944,1990].forEach(y=>ST.add(y));D.m.forEach(m=>ST.add(m.y));
 const YS=[...ST].sort((a,b)=>a-b);ms.max=1000;
-// XX a. suspaustas: intervalai po 1900 m. gauna mažesnį svorį
-const CW=[0];for(let i=1;i<YS.length;i++)CW.push(CW[i-1]+(YS[i-1]>=1900?0.22:1));const CT=CW[CW.length-1];const CN=CW.map(c=>c/CT);
+// laiko juosta: pasirinktas amžius išskleidžiamas (~50 % pločio), kiti suspaudžiami
+let CN=[];
+function weights(ci){const y=YS[ci];const a=AG.find(a=>y>=a[0]&&y<a[1])||AG[AG.length-1];
+ const base=[0];for(let i=1;i<YS.length;i++)base.push(YS[i-1]>=1900?0.22:1);
+ let inF=0,out=0;for(let i=1;i<YS.length;i++){if(YS[i-1]>=a[0]&&YS[i]<=a[1])inF+=base[i];else out+=base[i]}
+ const k=inF>0?Math.max(1,out/inF):1;const W=[0];for(let i=1;i<YS.length;i++)W.push(W[i-1]+base[i]*(YS[i-1]>=a[0]&&YS[i]<=a[1]?k:1));
+ const T=W[W.length-1];CN=W.map(c=>c/T);return a}
+
 const pos=y=>{if(y<=YS[0])return 0;for(let i=1;i<YS.length;i++)if(y<=YS[i])return CN[i-1]+(CN[i]-CN[i-1])*(y-YS[i-1])/(YS[i]-YS[i-1]);return 1};
 const cur_i=()=>{const t=ms.value/1000;let b=0,d=9;CN.forEach((c,i)=>{if(Math.abs(c-t)<d){d=Math.abs(c-t);b=i}});return b};
 const setIdx=i=>{ms.value=Math.round(CN[i]*1000)};
@@ -51,10 +57,6 @@ const fy=y=>y<0?(-y)+' m. pr. Kr.':y+' m.';
 const AG=[[-10000,-1800,'Akmens amžius','#c9b79c'],[-1800,-500,'Žalvario a.','#d9a86c'],[-500,1,'Ankst. geležies','#b9c4a0'],[1,400,'Senasis geležies','#9fb88a'],[400,800,'Vidurinis gel.','#8fae9a'],[800,1250,'Vėlyvasis geležies','#7fa3a8'],[1250,1569,'LDK','#a7a3c9'],[1569,1795,'Abiejų Tautų Respublika','#b9a3d9'],[1795,1915,'Carinė Rusija','#d4b3c4'],[1915,1918,'I pas. karas, vokiečių okup.','#e07b6a'],[1918,1920,'Nepriklausomybės kovos','#e8a15a'],[1920,1939,'Tarpukaris (Vilnius – Lenkijoje)','#f2d16b'],[1939,1940,'Vilnius grąžintas Lietuvai','#f2d16b'],[1940,1941,'Sovietų okup.','#c0392b'],[1941,1944,'Nacių okup.','#7f2a1d'],[1944,1990,'Sovietų okupacija','#b04a3f'],[1990,2026,'Nepriklausoma Lietuva','#7cb87a']];
 // karai ir okupacijos ankstesniais amžiais (plona juosta virš amžių)
 const WR=[[1655,1661,'Maskvos okupacija (tvanas)'],[1700,1721,'Šiaurės karas'],[1794,1795,'Kosciuškos sukilimas'],[1812,1813,'Napoleono žygis'],[1831,1831,'1831 m. sukilimas'],[1863,1864,'1863 m. sukilimas']];
-document.getElementById('ages').innerHTML=AG.map(a=>`<div title="${a[2]}: ${fy(a[0])}–${fy(a[1])}" style="left:${pos(a[0])*100}%;width:${(pos(a[1])-pos(a[0]))*100}%;background:${a[3]}">${a[2]}</div>`).join('');
-document.getElementById('ages').innerHTML+=WR.map(w=>`<div title="${w[2]}: ${w[0]}–${w[1]}" style="left:${pos(w[0])*100}%;width:${Math.max(0.25,(pos(w[1])-pos(w[0]))*100)}%;top:12px;height:4px;background:#000"></div>`).join('');
-document.getElementById('mk').innerHTML=D.m.map((m,i)=>`<span data-y="${m.y}" title="${m.n}" style="left:${pos(m.y)*100}%">${m.y}</span>`).join('');
-document.querySelectorAll('#mk span').forEach(e=>e.onclick=()=>{setIdx(YS.indexOf(+e.dataset.y));ms.oninput()});
 // ženklai rodomi tik jei telpa; persidengiantys paslepiami
 function fit(){
  const ov=(a,b)=>a.right+4>b.left;
@@ -63,9 +65,16 @@ function fit(){
  document.querySelectorAll('#ages div').forEach(e=>{if(!e.dataset.t)e.dataset.t=e.textContent;e.textContent=e.dataset.t;if(e.scrollWidth>e.clientWidth+1)e.textContent=''});
 }
 window.addEventListener('resize',fit);setTimeout(fit,0);
+function render(ci){const FA=weights(ci);
+document.getElementById('ages').innerHTML=AG.map(a=>`<div title="${a[2]}: ${fy(a[0])}–${fy(a[1])}" style="left:${pos(a[0])*100}%;width:${(pos(a[1])-pos(a[0]))*100}%;background:${a[3]}">${a[2]}</div>`).join('');
+document.getElementById('ages').innerHTML+=WR.map(w=>`<div title="${w[2]}: ${w[0]}–${w[1]}" style="left:${pos(w[0])*100}%;width:${Math.max(0.25,(pos(w[1])-pos(w[0]))*100)}%;top:12px;height:4px;background:#000"></div>`).join('');
+document.getElementById('mk').innerHTML=D.m.map((m,i)=>`<span data-y="${m.y}" title="${m.n}" style="left:${pos(m.y)*100}%">${m.y}</span>`).join('');
+document.querySelectorAll('#mk span').forEach(e=>e.onclick=()=>{render(YS.indexOf(+e.dataset.y));ms.oninput()});
 const TK=[[-10000,0],[-6000,1],[-2000,0],[0,0],[500,1],[1000,0],[1250,0],[1400,1],[1500,0],[1600,1],[1700,0],[1800,0],[1850,1],[1900,0],[2026,0]];
-document.getElementById('tk').innerHTML=TK.map(t=>`<span class="${t[1]?'m':''}" style="left:${pos(t[0])*100}%">${t[0]<0?(-t[0]/1000)+' tūkst. pr. Kr.':t[0]}</span>`).join('');
-setIdx(YS.indexOf(1581));
+const TKs=[...TK.filter(t=>t[0]<FA[0]||t[0]>=FA[1]),...YS.filter(y=>y>=FA[0]&&y<=FA[1]).map(y=>[y,0])].sort((p,q)=>p[0]-q[0]);document.getElementById('tk').innerHTML=TKs.map(t=>`<span class="${t[1]?'m':''}" style="left:${pos(t[0])*100}%">${t[0]<0?(-t[0]/1000)+' tūkst. pr. Kr.':t[0]}</span>`).join('');
+setIdx(ci);setTimeout(fit,0)}
+render(YS.indexOf(1581));
+
 const yv=()=>YS[cur_i()];
 // rodoma, jei radinio laikotarpis persidengia su pasirinktu intervalu; nedatuoti – tik paskutiniame (2026) taške
 const inR=(a,b)=>{const i=cur_i(),lo=YS[i],hi=i<YS.length-1?YS[i+1]-1:9999;if(a==null)return i===YS.length-1;return a<=hi&&(b==null?9999:b)>=lo};
@@ -79,7 +88,7 @@ function setMap(){const y=yv();const a=AG.find(a=>y>=a[0]&&y<a[1])||AG[AG.length
  ks.filter(k=>!HID.has(k)).forEach(k=>{const l=ML[k].addTo(map);l.setOpacity(document.getElementById('op').value/100);cur.push(l)});
  document.getElementById('mn').innerHTML=Object.entries(K).map(([c,k])=>`<label style="display:block"><input type="checkbox" data-i="${k}" ${HID.has(k)?'':'checked'}> <b>${c}:</b> ${D.m[k].y} m. ${esc(D.m[k].n)}</label>`).join('');
  document.querySelectorAll('#mn input').forEach(e=>e.onchange=()=>{e.checked?HID.delete(+e.dataset.i):HID.add(+e.dataset.i);setMap()})}
-ms.oninput=()=>{setMap();setFinds();window.setTyr&&setTyr()}; document.getElementById('show').onchange=()=>setMap();
+ms.oninput=()=>{setMap();setFinds();window.setTyr&&setTyr()};ms.onchange=()=>render(cur_i()); document.getElementById('show').onchange=()=>setMap();
 document.getElementById('op').oninput=e=>cur.forEach(l=>l.setOpacity(e.target.value/100)); setMap();
 const fm=D.f.map(f=>{const img=f.img?`img/${f.img}`:f.web_img;
  const mk=L.marker(f.ll,{title:f.t}).bindPopup(`<div class=pp><h3>${esc(f.t)}</h3><div class=d>Laikotarpis: ${esc(f.per)} · Tyrimai: ${esc(f.d)}</div>`+(img?`<img src="${img}" alt="">`+(f.gal?`<div style="display:flex;gap:3px;flex-wrap:wrap;margin-top:3px">${f.gal.map(g=>`<a href="${g}" target=_blank><img src="${g}" style="width:54px;height:40px;object-fit:cover;border-radius:3px"></a>`).join('')}</div>`:'')+`<div class=c><a href="${f.capu}" target=_blank>${esc(f.cap)}</a></div>`:'')+`<div>${esc(f.txt)}</div><div class=c>Vieta apytikslė (pagal adresą)</div><b>Šaltiniai</b><ul>${f.src.map(s=>`<li><a href="${s[1]}" target=_blank>${esc(s[0])}</a></li>`).join('')}</ul></div>`,{maxWidth:320});

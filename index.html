@@ -27,7 +27,7 @@ html,body{margin:0;height:100%;font:14px/1.45 system-ui,sans-serif} #map{positio
 #tk span{position:absolute;transform:translateX(-50%);font-size:10px;color:#666;white-space:nowrap}#tk span.hid{visibility:hidden}
 #tk span:before{content:'';position:absolute;left:50%;top:-4px;height:3px;border-left:1px solid #999}
 .relief{mix-blend-mode:multiply}.gone{filter:grayscale(1) brightness(1.15) opacity(.85)}</style></head><body><div id="map"></div>
-<details class="box"><summary>☰ Sluoksniai</summary><b>Paieška</b><input id="q" type="search" placeholder="pvz. Kernavė, Ukmergė, Trakų pilis" style="width:calc(100% - 8px);margin:3px 0"><div id="qr" style="max-height:220px;overflow:auto;font-size:12px"></div><b>Rodyti žemėlapyje</b><label style="display:block"><input type="checkbox" class="lyr" data-l="brd" checked> ➖ LDK / ATR sienos</label><label style="display:block"><input type="checkbox" class="lyr" data-l="pav" checked> 🔵 Išlikęs paveldas, kurį galima aplankyti (bažnyčios, pilys, piliakalniai, dvarai, tiltai…)</label><label style="display:block"><input type="checkbox" class="lyr" data-l="kvr"> 🟠 Saugomi paminklai (KVR); 🔴 – su senomis nuotraukomis</label><label style="display:block"><input type="checkbox" class="lyr" data-l="relief"> ⛰️ Reljefas (LiDAR)</label><label style="display:block"><input type="checkbox" class="lyr" data-l="vw" checked> 🎨 Paveikslai ir piešiniai</label><label style="display:block"><input type="checkbox" class="lyr" data-l="finds" checked> 📍 Svarbiausi radiniai: mėlyni – galima pamatyti dabar, pilki – neišlikę ar po žeme</label><label style="display:block"><input type="checkbox" class="lyr" data-l="tyr" checked> 🟢 ATL tyrimai (knygų santraukos)</label><label style="display:block;margin-top:6px"><input type="checkbox" id="show" checked> Rodyti senuosius planus</label>
+<details class="box"><summary>☰ Sluoksniai</summary><b>Paieška</b><input id="q" type="search" placeholder="pvz. Kernavė, Ukmergė, Trakų pilis" style="width:calc(100% - 8px);margin:3px 0"><div id="qr" style="max-height:220px;overflow:auto;font-size:12px"></div><b>Rodyti žemėlapyje</b><label style="display:block"><input type="checkbox" class="lyr" data-l="brd" checked> ➖ LDK / ATR sienos</label><label style="display:block"><input type="checkbox" class="lyr" data-l="kps" checked> 🏠 Vilniaus istoriniai pastatai (savivaldybės rinkinys, 4400+; spalva – amžius, pilki – neišlikę)</label><label style="display:block"><input type="checkbox" class="lyr" data-l="pav" checked> 🔵 Išlikęs paveldas, kurį galima aplankyti (bažnyčios, pilys, piliakalniai, dvarai, tiltai…)</label><label style="display:block"><input type="checkbox" class="lyr" data-l="kvr"> 🟠 Saugomi paminklai (KVR); 🔴 – su senomis nuotraukomis</label><label style="display:block"><input type="checkbox" class="lyr" data-l="relief"> ⛰️ Reljefas (LiDAR)</label><label style="display:block"><input type="checkbox" class="lyr" data-l="vw" checked> 🎨 Paveikslai ir piešiniai</label><label style="display:block"><input type="checkbox" class="lyr" data-l="finds" checked> 📍 Svarbiausi radiniai: mėlyni – galima pamatyti dabar, pilki – neišlikę ar po žeme</label><label style="display:block"><input type="checkbox" class="lyr" data-l="tyr" checked> 🟢 ATL tyrimai (knygų santraukos)</label><label style="display:block;margin-top:6px"><input type="checkbox" id="show" checked> Rodyti senuosius planus</label>
 <b>Transparency</b><input id="op" type="range" min="0" max="100" value="90">
 <b>Rodomas planas</b><div id="mn" style="font-size:12px;color:#555"></div><div id="mt" style="font-size:12px;color:#555;margin-top:4px"></div>
 </details>
@@ -77,7 +77,7 @@ function render(){
  document.getElementById('pv').disabled=!PY.some(y=>y<Y);document.getElementById('nx').disabled=!PY.some(y=>y>Y);
  setTimeout(fit,0)}
 function go(y){Y=y;render();ms.oninput&&update()}
-function update(){setMap();setFinds();window.setTyr&&setTyr();window.setViews&&setViews();window.setBorders&&setBorders();window.setTopo&&setTopo()}
+function update(){setMap();setFinds();window.setTyr&&setTyr();window.setViews&&setViews();window.setBorders&&setBorders();window.setTopo&&setTopo();window.setKP&&setKP()}
 document.getElementById('pv').onclick=()=>{const p=PY.filter(y=>y<Y);if(p.length)go(p[p.length-1])};
 document.getElementById('nx').onclick=()=>{const n=PY.find(y=>y>Y);if(n!=null)go(n)};
 render();
@@ -121,7 +121,7 @@ const VM=(D.v||[]).map(v=>{const ic=L.divIcon({className:'vwi',html:(v.k==='hist
 window.setViews=function(){vw.clearLayers();const c=CH[CI];VM.forEach(o=>{if(o.v.y>=c[0]&&o.v.y<c[1])vw.addLayer(o.mk)})}
 setViews();ctl.addOverlay(vw,'Paveikslai ir piešiniai');
 
-document.querySelectorAll('.lyr').forEach(e=>e.onchange=()=>{const L={vw,finds,tyr,relief,kvr,brd,pav}[e.dataset.l];e.checked?map.addLayer(L):map.removeLayer(L)});
+document.querySelectorAll('.lyr').forEach(e=>e.onchange=()=>{const L={vw,finds,tyr,relief,kvr,brd,pav,kps}[e.dataset.l];e.checked?map.addLayer(L):map.removeLayer(L)});
 map.on('overlayadd overlayremove',ev=>{const k=ev.layer===vw?'vw':ev.layer===finds?'finds':ev.layer===tyr?'tyr':ev.layer===relief?'relief':ev.layer===kvr?'kvr':ev.layer===pav?'pav':ev.layer===brd?'brd':null;if(k){const c=document.querySelector('.lyr[data-l='+k+']');if(c)c.checked=ev.type==='overlayadd'}});
 
 // reljefas: LiDAR pagrindu sukurtas aukščių modelis (maps.lt, 10 m), šešėliavimas skaičiuojamas serveryje
@@ -138,6 +138,13 @@ ctl.addOverlay(kvr,'Saugomi paminklai (KVR)');
 const pavR=L.canvas({padding:.3});const pav=L.layerGroup().addTo(map);const PVM=[];
 fetch('paveldas.json?v='+Math.floor(Date.now()/3e5)).then(r=>r.ok?r.json():[]).then(A=>{const fp=f=>'https://commons.wikimedia.org/wiki/Special:FilePath/'+encodeURIComponent(f);A.forEach(a=>{const w=a[6]===1?a[0]:a[6];const m=L.circleMarker([a[1],a[2]],{renderer:pavR,radius:a[4]=='piliakalnis'?4:5,color:'#0b3d91',weight:1.5,fillColor:'#2f80ed',fillOpacity:.85}).bindPopup(()=>`<div class=pp><h3>${esc(a[0])}</h3><div class=d>👁️ Galima pamatyti dabar · ${esc(a[4])}${a[3]?' · nuo '+a[3]+' m.':''}</div>${a[5]?`<a href="https://commons.wikimedia.org/wiki/File:${encodeURIComponent(a[5])}" target=_blank><img src="${fp(a[5])}?width=400" style="width:100%;max-height:220px;object-fit:cover;border-radius:4px"></a><div class=c>Foto: Wikimedia Commons (licencija – paspaudus nuotrauką)</div>`:''}<b>Daugiau</b><ul>${w?`<li><a href="https://lt.wikipedia.org/wiki/${encodeURIComponent(w)}" target=_blank>Vikipedija: ${esc(String(w).replace(/_/g,' '))}</a></li>`:''}<li><a href="https://www.google.com/maps?q=${a[1]},${a[2]}" target=_blank>Kelionė (Google Maps)</a></li></ul><div class=c>Duomenys: Wikidata (CC0). Rodoma visada, nepriklausomai nuo laiko juostos.</div></div>`,{maxWidth:320}).addTo(pav);PVM.push({n:a[0]+' '+a[4],ll:[a[1],a[2]],mk:m})})});
 ctl.addOverlay(pav,'Išlikęs paveldas');
+// Vilniaus istoriniai pastatai (paveldas.vilnius.lt, opencity.idvilnius.lt KPSE)
+const kpsR=L.canvas({padding:.3});const kps=L.layerGroup().addTo(map);let KPS=[];const KPM=[];
+const MAT={1:'medis',2:'mūras',3:'mišri',4:'metalas',5:'metalas',6:'kita'},BUK={1:'išlikęs',2:'iš dalies pakitęs',3:'neišlikęs',4:'iš dalies išlikęs'};
+const kcol=y=>!y?'#9e9e9e':y<1600?'#7b1fa2':y<1700?'#c2185b':y<1800?'#e64a19':y<1900?'#f9a825':y<1940?'#7cb342':'#90a4ae';
+fetch('kpse.json?v='+Math.floor(Date.now()/3e5)).then(r=>r.ok?r.json():[]).then(A=>{KPS=A;A.forEach(a=>{const gone=a[5]==3;const m=L.circleMarker([a[6],a[7]],{renderer:kpsR,radius:4,color:gone?'#666':'#333',weight:.6,fillColor:gone?'#bdbdbd':kcol(a[2]),fillOpacity:gone?.5:.9}).bindPopup(()=>`<div class=pp><h3>${esc(a[0])}</h3><div class=d>${esc(a[1])} · statyta: ${esc(a[3]||'nežinoma')}${MAT[a[4]]?' · '+MAT[a[4]]:''}${BUK[a[5]]?' · '+BUK[a[5]]:''}</div>${gone?'Šiandien nematomas: pastatas neišlikęs.':'👁️ Galima pamatyti dabar.'}<ul><li><a href="https://paveldas.vilnius.lt/statiniai/%7B${a[8]}%7D" target=_blank>Paveldo rinkinys: nuotraukos, istorija</a></li>${a[9]?`<li><a href="https://paveldas.idvilnius.lt/?title=${encodeURIComponent(a[1])}&building=${a[9]}" target=_blank>${a[10]&1?'3D skenuotas modelis':''}${a[10]==3?' ir ':''}${a[10]&2?'tikslieji brėžiniai (PDF)':''}</a></li>`:''}</ul><div class=c>Duomenys: Vilniaus miesto savivaldybė, paveldas.vilnius.lt.</div></div>`,{maxWidth:320});m._y=a[2];KPM.push({n:a[1]+' '+a[0],ll:[a[6],a[7]],mk:m,y:a[2]})});window.setKP()});
+window.setKP=function(){const Y=yv();kps.clearLayers();if(map.getZoom()<13)return;KPM.forEach(o=>{if(!o.y||o.y<=Y)kps.addLayer(o.mk)})};map.on('zoomend',()=>window.setKP&&setKP());
+
 const pavZ=()=>{const z=map.getZoom(),r=z<9?2.5:z<12?4:6;pav.eachLayer(l=>l.setRadius(r))};map.on('zoomend',pavZ);setTimeout(pavZ,3000);
 
 
@@ -147,6 +154,7 @@ function qGo(o){if(o.y!=null)go(o.y);if(!map.hasLayer(o.g))map.addLayer(o.g);if(
 document.getElementById('q').oninput=e=>{const q=norm(e.target.value.trim());const box=document.getElementById('qr');if(q.length<3){box.innerHTML='';return}
  const R=[];fm.forEach(o=>{if(norm(o.f.t+' '+o.f.txt).includes(q))R.push({t:'📍 '+o.f.t,ll:o.f.ll,y:o.f.pf!=null?Math.max(o.f.pf,-10000):2026,mk:o.mk,g:finds})});
  VM.forEach(o=>{if(norm(o.v.t+' '+o.v.au+' '+o.v.txt).includes(q))R.push({t:'🎨 '+o.v.t+' ('+o.v.y+')',ll:o.v.ll,y:o.v.y,mk:o.mk,g:vw})});
+ KPM.forEach(o=>{if(norm(o.n).includes(q))R.push({t:'🏠 '+o.n,ll:o.ll,y:o.y||null,mk:o.mk,g:kps})});
  PVM.forEach(o=>{if(norm(o.n).includes(q))R.push({t:'🔵 '+o.n,ll:o.ll,y:null,mk:o.mk,g:pav})});
  KVM.forEach(o=>{if(norm(o.n).includes(q))R.push({t:'🟠 '+o.n,ll:o.ll,y:null,mk:o.mk,g:kvr})});
  TY.forEach(o=>{if(norm(o.d.t+' '+o.d.a).includes(q))R.push({t:'🟢 '+o.d.t+' ('+o.d.y+')',ll:[o.d.lat,o.d.lon],y:o.d.pf?o.d.pf[0]:2026,mk:o.mk,g:tyr})});
